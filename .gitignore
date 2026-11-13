@@ -16,3 +16,5 @@ mlruns/
 evals/results/
 *.joblib
 .ipynb_checkpoints/
+data/scenarios/
+creditlens.db

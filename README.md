@@ -187,6 +187,33 @@ are a short Python warm-up, a Linux and tooling refresher, and a GraphQL lab. Th
 
 ---
 
+## Sessions 1 and 2: what to run
+
+Everything for the two sessions is in this repository now. The day before each session, from the repo folder
+with your virtual environment active:
+
+```bash
+git pull
+python -m pip install -r requirements.txt     # picks up the new extras: API, extraction, retrieval
+python workshop/get_ready.py 1                # before Session 1 (Saturday)
+python workshop/get_ready.py 2                # before Session 2 (Sunday)
+```
+
+Each ends with `Ready`, or a short list of what failed. Send a screenshot of the list and we fix it before the session.
+
+| | Laptop track | Colab track |
+| --- | --- | --- |
+| Session 1 | `workshop/session-1-data-and-extraction/README.md` | `notebooks/01_data_foundation.ipynb`, then `02_ground_truth_and_extraction.ipynb` |
+| Session 2 | `workshop/session-2-retrieval/README.md` | `notebooks/03_retrieval.ipynb` |
+| The story cases (Rohan, Rahul and four more) | `python -m creditlens.scenarios`, see `docs/scenarios.md` | `notebooks/08_story_scenarios.ipynb` |
+
+The trainer's live demo, cell by cell in slide order, is `workshop/live_demo_session1.py` and `live_demo_session2.py`.
+Open one in VS Code and run the cells to follow along. No API key is needed for anything in Sessions 1 and 2: set
+`LLM_OFFLINE=1` in your `.env` and the extraction step uses a built-in stub.
+
+Session 2 embeds about 1,400 policy chunks the first time it runs (two to three minutes on a laptop). The trainer
+shares a ready-made `data/cache/retrieval/` folder before the session; drop it into `data/` to skip the wait.
+
 ## What is in this repository
 
 ```
@@ -194,16 +221,19 @@ Day1_FDE_session/
 ├── README.md                 this guide
 ├── requirements.txt          what to install
 ├── pyproject.toml            the Python package definition
-├── .env.example              settings template; no keys are needed for the pre-work
+├── .env.example              settings template
 ├── workshop/
 │   ├── get_ready.py          the one-command check
-│   └── session-0-prework/    one page per pre-work topic
-├── notebooks/00_prework.ipynb
-├── src/creditlens/           the code the pre-work runs: data generators, the pipeline, the setup check
-└── tests/                    the pre-work tests
+│   ├── live_demo_session1.py, live_demo_session2.py   the trainer's demo, cell by cell
+│   ├── session-0-prework/    one page per pre-work topic
+│   ├── session-1-data-and-extraction/
+│   └── session-2-retrieval/
+├── notebooks/                00_prework, 01, 02, 03 and 08 (Colab)
+├── src/creditlens/           the whole CreditLens package (Sessions 3 and 4 code is here too; ignore it for now)
+├── evals/, ground_truth/     the scoreboards and the hand-checked answers
+├── docs/                     contracts, data sources, extraction, retrieval, the story cases
+└── tests/                    what get_ready.py runs
 ```
 
 The data folders (`data/`) are created on your laptop by `get_ready.py` and are not in Git, so
 everyone generates identical data from the same seed.
-
-The full project, organised day by day and topic by topic, is shared before Session 1.
