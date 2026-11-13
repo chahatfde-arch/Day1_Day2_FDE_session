@@ -131,16 +131,42 @@ for name in party:
 # Start the API in the background and call it.
 
 # %%
-import subprocess, time, requests
-api = subprocess.Popen(["python", "-m", "creditlens.api"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-time.sleep(4)
-print(requests.get("http://127.0.0.1:8000/health").json())
-tok = requests.post("http://127.0.0.1:8000/auth/token", json={"user_id": "U01"}).json()
-print("token for U01 (North analyst):", str(tok)[:60], "...")
+!python -m creditlens.pipeline --load
+
+# %%
+import subprocess, sys, time, requests
+
+API = "http://127.0.0.1:8000"
+
+def alive():
+    try:
+        return bool(requests.get(f"{API}/health", timeout=2).json().get("database_ok"))
+    except requests.RequestException:
+        return False
+
+api = None
+if alive():
+    print("an API is already running on port 8000; reusing it")
+else:
+    api = subprocess.Popen([sys.executable, "-m", "creditlens.api"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    for _ in range(30):
+        if alive():
+            break
+        time.sleep(1)
+print(requests.get(f"{API}/health").json())
+
+def login(user_id):
+    r = requests.post(f"{API}/auth/token", json={"user_id": user_id})
+    if r.status_code != 200:
+        raise SystemExit(f"login failed ({r.status_code}): {r.json().get('detail')}")
+    return r.json()
+
+tok = login("U01")
+print("token for U01 (North analyst):", tok["access_token"][:40], "...")
 
 # %%
 headers = {"Authorization": f"Bearer {tok['access_token']}"}
-page = requests.get("http://127.0.0.1:8000/applications", headers=headers).json()
+page = requests.get(f"{API}/applications", headers=headers).json()
 apps = page["applications"]
 print(page["count"], "applications visible to U01; regions:", {a["region"] for a in apps}, "| filter:", page["region_filter"])
 
@@ -148,8 +174,8 @@ print(page["count"], "applications visible to U01; regions:", {a["region"] for a
 # **Predict before you run:** U05 is the Head of Credit. How many applications will U05 see?
 
 # %%
-tok5 = requests.post("http://127.0.0.1:8000/auth/token", json={"user_id": "U05"}).json()
-page5 = requests.get("http://127.0.0.1:8000/applications", headers={"Authorization": f"Bearer {tok5['access_token']}"}).json()
+tok5 = login("U05")
+page5 = requests.get(f"{API}/applications", headers={"Authorization": f"Bearer {tok5['access_token']}"}).json()
 print(page5["count"], "applications visible to U05")
 
 # %% [markdown]
@@ -157,7 +183,8 @@ print(page5["count"], "applications visible to U05")
 # Without keys the decorator is a no-op, which is deliberate: tracing must never break the product.
 
 # %%
-api.terminate()
+if api is not None:
+    api.terminate()
 
 # %% [markdown]
 # ## 4. Structured extraction (L1 to L10, M1, M2, M8, M10, M11)

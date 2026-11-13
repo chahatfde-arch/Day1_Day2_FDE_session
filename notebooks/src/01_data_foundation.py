@@ -125,10 +125,11 @@ print(normalize_counterparty("Amzn Seller Svcs Pvt Ltd."))
 # ## 6. Run the pipeline and enforce the contracts
 # `clean_statement` detects the layout, fixes every problem it knows, rebuilds missing balances from
 # the running total, and validates against `contracts.clean_transactions`. The quality report says
-# what was fixed in each file: that report is your bingo card's answer sheet.
+# what was fixed in each file: that report is your bingo card's answer sheet. `--load` also writes the
+# tables into a local SQLite database, which the API in the next notebook reads.
 
 # %%
-!python -m creditlens.pipeline
+!python -m creditlens.pipeline --load
 
 # %%
 quality = pd.read_csv("data/clean/quality_report.csv")

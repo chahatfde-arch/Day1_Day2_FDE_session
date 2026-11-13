@@ -12,7 +12,7 @@
 # ```bash
 # python workshop/get_ready.py 1          # ends with "Ready"
 # python -m creditlens.generators         # data/raw: 30 applications, statements, financials, policy, registry
-# python -m creditlens.pipeline           # data/clean and data/curated
+# python -m creditlens.pipeline --load    # data/clean, data/curated and the SQLite tables the API reads
 # python -m creditlens.scenarios          # data/scenarios: Rohan, Rahul and the four bonus files
 # ```
 
@@ -123,8 +123,9 @@ print(json.dumps(receipt, indent=1))
 
 # %% [markdown]
 # ## Slide "Priya clicks a button": the API, RBAC and the audit trail
-# Terminal 1:
+# Terminal 1 (the API reads the users table, so load the database first):
 # ```bash
+# python -m creditlens.pipeline --load
 # python -m creditlens.api
 # ```
 # Terminal 2 (U01 sees North only; U05 sees everything; U06 can read but not write):
