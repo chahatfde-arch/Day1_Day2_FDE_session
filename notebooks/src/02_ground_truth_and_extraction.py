@@ -28,6 +28,18 @@
 !python -m creditlens.pipeline --load
 !python -m creditlens.data_real --only receipts
 
+
+# %% [markdown]
+# **Laptop users:** skip the clone cell above. The next cell finds the repository root, so the notebook
+# works whether you opened it from the repo folder or from `notebooks/`.
+
+# %%
+import os
+from pathlib import Path
+while not Path("pyproject.toml").exists() and Path.cwd() != Path.cwd().parent:
+    os.chdir("..")
+assert Path("pyproject.toml").exists(), "Open this notebook from inside the Day1_FDE_session folder."
+print("working folder:", Path.cwd())
 # %% [markdown]
 # ### Keys
 # Put your Gemini key in Colab's Secrets panel (the key icon on the left) as `GEMINI_API_KEY`, and a

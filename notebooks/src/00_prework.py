@@ -20,15 +20,26 @@
 
 # %% [markdown]
 # ## 1. Clone and install
-# Replace `YOUR-USERNAME` with the GitHub user that owns the workshop repo.
 # The `-e` flag installs the package in "editable" mode: edits under `src/` take effect
 # without reinstalling, which is how we work for the whole week.
 
 # %%
-!git clone https://github.com/YOUR-USERNAME/creditlens-ai.git
-%cd creditlens-ai
+!git clone https://github.com/chahatfde-arch/Day1_FDE_session.git
+%cd Day1_FDE_session
 !pip install -q -e ".[dev,realdata]"
 
+
+# %% [markdown]
+# **Laptop users:** skip the clone cell above. The next cell finds the repository root, so the notebook
+# works whether you opened it from the repo folder or from `notebooks/`.
+
+# %%
+import os
+from pathlib import Path
+while not Path("pyproject.toml").exists() and Path.cwd() != Path.cwd().parent:
+    os.chdir("..")
+assert Path("pyproject.toml").exists(), "Open this notebook from inside the Day1_FDE_session folder."
+print("working folder:", Path.cwd())
 # %% [markdown]
 # ## 2. Generate the Good Bank data
 # One command builds 40 companies, 30 loan applications, 12 months of messy bank statements each,
@@ -120,6 +131,9 @@ from pathlib import Path
 import csv
 
 files = sorted(Path("data/raw/statements").glob("*.csv"))
+if not files:
+    raise SystemExit(f"No statement files under {Path.cwd() / 'data/raw/statements'}. "
+                     "Run section 2 (python -m creditlens.generators) first, from the repository folder.")
 with open(files[0], newline="", encoding="utf-8") as f:
     n_rows = sum(1 for _ in csv.reader(f)) - 1
 print(f"{len(files)} statement files; the first one has {n_rows} rows")

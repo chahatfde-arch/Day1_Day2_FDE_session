@@ -26,6 +26,18 @@
 %cd Day1_FDE_session
 !pip install -q -r requirements.txt
 
+
+# %% [markdown]
+# **Laptop users:** skip the clone cell above. The next cell finds the repository root, so the notebook
+# works whether you opened it from the repo folder or from `notebooks/`.
+
+# %%
+import os
+from pathlib import Path
+while not Path("pyproject.toml").exists() and Path.cwd() != Path.cwd().parent:
+    os.chdir("..")
+assert Path("pyproject.toml").exists(), "Open this notebook from inside the Day1_FDE_session folder."
+print("working folder:", Path.cwd())
 # %% [markdown]
 # ## 1. Discovery role-play (no code, about 30 minutes)
 # Your trainer plays the Head of Credit, the Chief Risk Officer and the CISO. Each holds constraints

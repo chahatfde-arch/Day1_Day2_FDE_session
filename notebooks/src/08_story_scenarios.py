@@ -27,6 +27,18 @@
 !pip install -q -e .
 !mkdir -p src/creditlens/scenarios src/creditlens/retrieval
 
+
+# %% [markdown]
+# **Laptop users:** skip the clone cell above. The next cell finds the repository root, so the notebook
+# works whether you opened it from the repo folder or from `notebooks/`.
+
+# %%
+import os
+from pathlib import Path
+while not Path("pyproject.toml").exists() and Path.cwd() != Path.cwd().parent:
+    os.chdir("..")
+assert Path("pyproject.toml").exists(), "Open this notebook from inside the Day1_FDE_session folder."
+print("working folder:", Path.cwd())
 # %%
 %%writefile src/creditlens/scenarios/__init__.py
 """Opt-in story scenarios: Rohan's web of companies and Rahul's family cash. See `generate.py`."""
