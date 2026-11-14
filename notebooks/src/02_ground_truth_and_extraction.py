@@ -1,5 +1,5 @@
 # %% [markdown]
-# # Day 2: Ground truth and document extraction
+# # Session 1, part two: ground truth and document extraction
 #
 # **Where we are in the story.** Rohan's file has arrived at Good Bank. Before Priya can write
 # anything, someone has to read three years of financial statements and the supplier invoices he
@@ -272,7 +272,7 @@ print("provider calls:", g.calls, "| cache hits:", g.cache_hits, "| models:", g.
 # ## 5. First evaluation (goes on the scoreboard)
 # Field-level accuracy against the golden set. Strings are compared after normalising case and
 # punctuation; numbers must be within 1 percent; dates are parsed before comparing.
-# Record your pod's numbers. On Day 7 the same script runs inside CI as a gate.
+# Record your pod's numbers. In Session 4 the same script runs inside CI as a gate.
 
 # %%
 !python -m evals.extraction_accuracy --limit 10
@@ -293,5 +293,5 @@ for kind in ("financial_statement", "receipt"):
 
 # %% [markdown]
 # ## Exit ticket
-# One thing you learned, one open question. Tomorrow: retrieval, where Priya's forty-page policy
+# One thing you learned, one open question. Tomorrow: retrieval, where Priya's policy
 # manual and a real four-hundred-page regulator rulebook become searchable.
