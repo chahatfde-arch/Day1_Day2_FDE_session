@@ -105,9 +105,16 @@ class RateLimiter:
 # ---------------------------------------------------------------------------
 
 
+def _text_of(content: Any) -> str:
+    """The text of a message. Multimodal messages (text plus an image) are a list of parts."""
+    if isinstance(content, str):
+        return content
+    return " ".join(p.get("text", "") for p in content or [] if isinstance(p, dict) and p.get("type") == "text")
+
+
 def _offline_answer(messages: list[dict], response_model: Optional[Type[BaseModel]]) -> str:
     """Return something shaped like a real answer. Modules may register better stubs."""
-    user_text = " ".join(m.get("content", "") for m in messages if m.get("role") == "user")
+    user_text = " ".join(_text_of(m.get("content", "")) for m in messages if m.get("role") == "user")
     if response_model is not None:
         handler = OFFLINE_HANDLERS.get(response_model.__name__)
         if handler:
