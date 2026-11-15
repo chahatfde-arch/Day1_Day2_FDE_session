@@ -205,6 +205,38 @@ hand_offs = pass_through(a902, {"Kamla Devi"})
 print(len(hand_offs), "times: cash in, then the same amount to", sorted(set(hand_offs.sent_to)), "the next day")
 
 # %% [markdown]
+# **Picture it.** The same two patterns, drawn. Each orange line down is money leaving for Ravi
+# Containers; the blue line up, a day or two later, is the money coming back. Below, every dot is a
+# cash deposit that went straight on to Kamla Devi.
+
+# %%
+# Picture it: every round trip and every cash hand-off on one timeline
+import matplotlib.pyplot as plt
+import pandas as pd
+
+fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(11, 6.5))
+ax1.vlines(pd.to_datetime(trips.out_date), 0, -trips.out_amount / 1e5, color="#eb6834", lw=2,
+           label="out to RAVI CONTAINERS")
+ax1.vlines(pd.to_datetime(trips.back_date), 0, trips.back_amount / 1e5, color="#2a78d6", lw=2,
+           label="back from RAVI CONTAINERS")
+ax1.axhline(0, color="#888888", lw=0.8)
+ax1.set_title(f"Rohan (A901): {len(trips)} round trips, out and back within days", loc="left")
+ax1.set_ylabel("lakh rupees")
+ax1.legend(loc="lower right", bbox_to_anchor=(1, 1.0), frameon=False, ncol=2)
+
+ax2.scatter(pd.to_datetime(hand_offs.cash_date), hand_offs.amount / 1e5, s=40, color="#1baf7a",
+            edgecolors="white", linewidths=1)
+ax2.set_title(f"Rahul (A902): {len(hand_offs)} cash deposits, each passed on to KAMLA DEVI within two days",
+              loc="left")
+ax2.set_ylabel("lakh rupees")
+ax2.set_ylim(bottom=0)
+for ax in (ax1, ax2):
+    ax.spines[["top", "right"]].set_visible(False)
+    ax.grid(axis="y", color="#e5e5e5", lw=0.6)
+plt.tight_layout()
+plt.show()
+
+# %% [markdown]
 # Neither of these is a verdict. We cannot yet see who Ravi Containers is, or who Kamla Devi is. For
 # that we need the related-party graph, and that is Session 2. Notice what did the detective work here:
 # `normalize_counterparty` turned three spellings into one name, and only then did the pattern show.

@@ -110,6 +110,35 @@ for name in party:
 !python ground_truth/agreement.py ground_truth/party_demo/member_a.csv ground_truth/party_demo/member_b.csv --key file
 
 # %% [markdown]
+# **Picture it.** Kappa for each box from the demo run. The dashed lines are the tool's own
+# cut-offs: 0.6 is usable, 0.8 is strong.
+
+# %%
+# Picture it: kappa for each box
+# To draw your own: swap the two files for "my_labels.csv" and "ground_truth/party_demo/official.csv".
+import sys
+import matplotlib.pyplot as plt
+import pandas as pd
+sys.path.insert(0, "ground_truth")
+from agreement import agreement_table
+
+table = agreement_table(pd.read_csv("ground_truth/party_demo/member_a.csv"),
+                        pd.read_csv("ground_truth/party_demo/member_b.csv"), key="file")
+fig, ax = plt.subplots(figsize=(8, 3.2))
+ax.barh(table.field, table.kappa, color="#2a78d6", height=0.55)
+for y, v in enumerate(table.kappa):
+    ax.text(v + 0.02, y, f"{v:.2f}", va="center", fontsize=10)
+for x, word in ((0.6, "usable"), (0.8, "strong")):
+    ax.axvline(x, color="#888888", lw=1, ls="--")
+    ax.text(x, -0.75, word, ha="center", fontsize=9, color="#555555")
+ax.set_xlim(0, 1.12)
+ax.set_ylim(len(table) - 0.5, -1)
+ax.set_title("Kappa per box: date and total agree, company and address are weak", loc="left", fontsize=11)
+ax.spines[["top", "right"]].set_visible(False)
+plt.tight_layout()
+plt.show()
+
+# %% [markdown]
 # **Your turn.** Type what you read on each receipt between the quotes, then run the cell.
 # It saves your answers and scores them against the official answers in `ground_truth/party_demo/official.csv`.
 
@@ -304,6 +333,33 @@ print("provider calls:", g.calls, "| cache hits:", g.cache_hits, "| models:", g.
 
 # %%
 !python -m evals.extraction_accuracy --limit 10
+
+# %% [markdown]
+# **Picture it.** Accuracy for every box, on both kinds of document. The dashed line is the 85
+# percent pass mark from `evals/thresholds.json` (it applies to the overall score).
+
+# %%
+# Picture it: accuracy for every box, against the pass mark
+import json
+import matplotlib.pyplot as plt
+
+res = json.load(open("evals/results/extraction_accuracy.json"))
+fig, axes = plt.subplots(1, 2, figsize=(12, 4))
+for ax, kind, title in zip(axes, ("financial_statement", "receipt"), ("Company accounts", "Receipts")):
+    per = res[kind]["per_field"]
+    names = list(per)
+    acc = [per[n]["accuracy"] * 100 for n in names]
+    ax.barh(names, acc, color="#2a78d6", height=0.6)
+    for y, v in enumerate(acc):
+        ax.text(v + 1, y, f"{v:.0f}%", va="center", fontsize=9)
+    ax.axvline(85, color="#888888", ls="--", lw=1)
+    ax.text(85, -1.0, "pass mark 85%", ha="center", fontsize=9, color="#555555")
+    ax.set_xlim(0, 115)
+    ax.set_ylim(len(names) - 0.5, -1.4)
+    ax.set_title(f"{title}: {res[kind]['overall']['accuracy']:.1%} of boxes right", loc="left", fontsize=11)
+    ax.spines[["top", "right"]].set_visible(False)
+plt.tight_layout()
+plt.show()
 
 # %% [markdown]
 # **Find the worst failure.** Open `evals/results/extraction_accuracy.json`, find the document with

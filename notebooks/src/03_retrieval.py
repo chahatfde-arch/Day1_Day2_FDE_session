@@ -214,6 +214,61 @@ for who, cid in (("Rohan", "SC01"), ("Rahul", "SC10")):
     print(f"   group exposure {e.total_exposure_inr_000:,} vs limit {e.limit_inr_000:,} -> breach: {e.breaches_limit}\n")
 
 # %% [markdown]
+# **Picture it.** The links that make each group, drawn. Blue circles are companies, orange are
+# directors, green are registered addresses. A solid line is "is director of", a dashed line is "is
+# registered at". Only the directors and addresses shared by two or more companies are drawn, because
+# those are the links that make a group.
+
+# %%
+# Picture it: draw the links that make each group
+import matplotlib.pyplot as plt
+import networkx as nx
+from matplotlib.lines import Line2D
+
+COLOURS = {"Company": "#2a78d6", "Director": "#eb6834", "Address": "#1baf7a"}
+
+
+def draw_group(ax, gs, company_ids, title):
+    comp = {f"Company:{c}" for c in company_ids}
+    shared = {n for n in gs.graph if gs.graph.nodes[n]["kind"] != "Company"
+              and len(comp & set(gs.graph[n])) >= 2}          # the links that make the group
+    sub = gs.graph.subgraph(comp | shared)
+    pos = nx.kamada_kawai_layout(sub)
+    for kind, style in (("DIRECTOR_OF", "solid"), ("REGISTERED_AT", "dashed")):
+        nx.draw_networkx_edges(sub, pos, ax=ax, style=style, width=2, edge_color="#777777",
+                               edgelist=[(a, b) for a, b, k in sub.edges(data="kind") if k == kind])
+    for kind, colour in COLOURS.items():
+        nx.draw_networkx_nodes(sub, pos, ax=ax, node_color=colour, node_size=700, edgecolors="white", linewidths=2,
+                               nodelist=[n for n, k in sub.nodes(data="kind") if k == kind])
+    for n, d in sub.nodes(data=True):
+        if d["kind"] == "Company":
+            text = gs.companies[d["company_id"]]["legal_name"].replace(" Pvt Ltd", "")
+        elif d["kind"] == "Director":
+            text = d.get("full_name") or d["director_id"]
+        else:
+            text = d["value"][:28]
+        x, y = pos[n]
+        ax.text(x, y - 0.17, text, ha="center", va="top", fontsize=9, color="#222222")
+    ax.set_title(title, loc="left", fontsize=11)
+    ax.margins(0.25)
+    ax.axis("off")
+
+
+rohan = [m.company_id for m in story_graph.group_exposure("SC01").members]
+rahul = [m.company_id for m in story_graph.group_exposure("SC10").members]
+fig, axes = plt.subplots(1, 3, figsize=(17, 5.5))
+draw_group(axes[0], story_graph, rohan, "Rohan: one group of four, rule 5.2 breached")
+draw_group(axes[1], story_graph, rahul, "Rahul: a family of two, within the limit")
+draw_group(axes[2], store, ["C019", "C022"], "Good Bank C019 and C022: linked only by an address")
+handles = [Line2D([], [], marker="o", ls="", markersize=12, markerfacecolor=c, markeredgecolor="white",
+                  label=k.lower()) for k, c in COLOURS.items()]
+handles += [Line2D([], [], color="#777777", lw=2, label="is director of"),
+            Line2D([], [], color="#777777", lw=2, ls="--", label="is registered at")]
+fig.legend(handles=handles, loc="lower center", ncol=5, frameon=False)
+plt.tight_layout(rect=(0, 0.08, 1, 1))
+plt.show()
+
+# %% [markdown]
 # The graph needs one more fact before Priya can write anything: which rule does this break, in the
 # bank's own words? That is a retrieval question, so we ask the policy index, filtered to Good Bank.
 
@@ -292,6 +347,44 @@ except Exception as e:
 
 # %%
 !python -m evals.retrieval_eval --k 5
+
+# %% [markdown]
+# **Picture it.** Quality on the left, speed on the right. They are separate charts on purpose:
+# scores and milliseconds do not share a scale.
+
+# %%
+# Picture it: how often each search finds the right section, and how long it takes
+import json
+import matplotlib.pyplot as plt
+import numpy as np
+
+rep = json.load(open("evals/results/retrieval_eval.json"))["summary"]
+names = list(rep)
+x = np.arange(len(names))
+fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 4.2))
+for off, key, colour, label in ((-0.2, "recall@5", "#2a78d6", "recall@5: right section in the top five"),
+                                (0.2, "mrr", "#eb6834", "MRR: how high it was")):
+    vals = [rep[n][key] for n in names]
+    ax1.bar(x + off, vals, 0.38, color=colour, label=label)
+    for xi, v in zip(x + off, vals):
+        ax1.text(xi, v + 0.02, f"{v:.2f}", ha="center", fontsize=9)
+ax1.axhline(0.70, color="#888888", ls="--", lw=1, label="gate: hybrid recall@5 must stay at or above 0.70")
+ax1.set_xticks(x, names)
+ax1.set_ylim(0, 1.3)
+ax1.legend(loc="upper left", frameon=False)
+ax1.set_title("Quality: higher is better", loc="left", fontsize=11)
+ms = [rep[n]["avg_latency_ms"] for n in names]
+ax2.bar(x, ms, 0.5, color="#1baf7a")
+ax2.set_yscale("log")
+for xi, v in zip(x, ms):
+    ax2.text(xi, v * 1.15, f"{v:,.0f} ms", ha="center", fontsize=9)
+ax2.set_xticks(x, names)
+ax2.set_ylim(top=max(ms) * 4)
+ax2.set_title("Speed: average time per question (log scale, lower is faster)", loc="left", fontsize=11)
+for ax in (ax1, ax2):
+    ax.spines[["top", "right"]].set_visible(False)
+plt.tight_layout()
+plt.show()
 
 # %% [markdown]
 # Go back to your "which retriever?" votes. Which questions did hybrid win, which did BM25 win alone,
