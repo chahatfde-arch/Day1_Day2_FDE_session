@@ -74,13 +74,13 @@ You should see something like `Python 3.12.4` and `git version 2.45.0`.
 
 ```
 cd Documents
-git clone https://github.com/chahatfde-arch/Day1_FDE_session.git
-cd Day1_FDE_session
+git clone https://github.com/chahatfde-arch/Day1_Day2_FDE_session.git
+cd Day1_Day2_FDE_session
 ```
 
-This downloads the repository into a folder called `Day1_FDE_session` inside your Documents.
+This downloads the repository into a folder called `Day1_Day2_FDE_session` inside your Documents.
 Every later command must be run from inside this folder. If you open a new terminal later, run
-`cd Documents/Day1_FDE_session` first.
+`cd Documents/Day1_Day2_FDE_session` first.
 
 ---
 
@@ -166,7 +166,7 @@ work", and we will fix it before the session.
 
 ## Optional, if you have 20 more minutes
 
-Open the pre-work notebook in VS Code: File, Open Folder, choose `Day1_FDE_session`, then open
+Open the pre-work notebook in VS Code: File, Open Folder, choose `Day1_Day2_FDE_session`, then open
 `notebooks/00_prework.ipynb`. When VS Code asks for a kernel, pick the `.venv` one. Sections 5 to 7
 are a short Python warm-up, a Linux and tooling refresher, and a GraphQL lab. The topic pages are in
 `workshop/session-0-prework/`.
@@ -217,7 +217,7 @@ shares a ready-made `data/cache/retrieval/` folder before the session; drop it i
 ## What is in this repository
 
 ```
-Day1_FDE_session/
+Day1_Day2_FDE_session/
 ├── README.md                 this guide
 ├── requirements.txt          what to install
 ├── pyproject.toml            the Python package definition

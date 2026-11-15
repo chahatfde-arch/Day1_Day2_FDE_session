@@ -22,7 +22,7 @@
 # This clones the pre-work repo, installs it, adds the scenario code and writes the data. Nothing needs an API key.
 
 # %%
-!git clone -q https://github.com/chahatfde-arch/Day1_FDE_session.git creditlens-day1
+!git clone -q https://github.com/chahatfde-arch/Day1_Day2_FDE_session.git creditlens-day1
 %cd creditlens-day1
 !pip install -q -e .
 !mkdir -p src/creditlens/scenarios src/creditlens/retrieval
@@ -37,7 +37,7 @@ import os
 from pathlib import Path
 while not Path("pyproject.toml").exists() and Path.cwd() != Path.cwd().parent:
     os.chdir("..")
-assert Path("pyproject.toml").exists(), "Open this notebook from inside the Day1_FDE_session folder."
+assert Path("pyproject.toml").exists(), "Open this notebook from inside the Day1_Day2_FDE_session folder."
 print("working folder:", Path.cwd())
 # %%
 %%writefile src/creditlens/scenarios/__init__.py

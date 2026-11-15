@@ -24,8 +24,8 @@
 # without reinstalling, which is how we work for the whole week.
 
 # %%
-!git clone https://github.com/chahatfde-arch/Day1_FDE_session.git
-%cd Day1_FDE_session
+!git clone https://github.com/chahatfde-arch/Day1_Day2_FDE_session.git
+%cd Day1_Day2_FDE_session
 !pip install -q -e ".[dev,realdata]"
 
 
@@ -38,7 +38,7 @@ import os
 from pathlib import Path
 while not Path("pyproject.toml").exists() and Path.cwd() != Path.cwd().parent:
     os.chdir("..")
-assert Path("pyproject.toml").exists(), "Open this notebook from inside the Day1_FDE_session folder."
+assert Path("pyproject.toml").exists(), "Open this notebook from inside the Day1_Day2_FDE_session folder."
 print("working folder:", Path.cwd())
 # %% [markdown]
 # ## 2. Generate the Good Bank data

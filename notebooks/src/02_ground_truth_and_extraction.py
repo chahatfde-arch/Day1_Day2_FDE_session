@@ -21,13 +21,17 @@
 # Same as Day 1. If you are catching up, the `day2-start` branch has milestones 1 and 2 done.
 
 # %%
-!git clone https://github.com/chahatfde-arch/Day1_FDE_session.git
-%cd Day1_FDE_session
-!pip install -q -e ".[dev,llm,api,extraction,realdata]"
-!python -m creditlens.generators
-!python -m creditlens.pipeline --load
-!python -m creditlens.data_real --only receipts
-
+import sys
+if "google.colab" in sys.modules:   # Colab only. On a laptop this cell does nothing.
+    !git clone https://github.com/chahatfde-arch/Day1_Day2_FDE_session.git
+    %cd Day1_Day2_FDE_session
+    !pip install -q -e ".[dev,llm,api,extraction,realdata]"
+    !python -m creditlens.generators
+    !python -m creditlens.pipeline --load
+    !python -m creditlens.data_real --only receipts
+    !python -m creditlens.scenarios
+else:
+    print("Not on Colab: skipping the clone. The next cell finds your repo folder.")
 
 # %% [markdown]
 # **Laptop users:** skip the clone cell above. The next cell finds the repository root, so the notebook
@@ -38,27 +42,18 @@ import os
 from pathlib import Path
 while not Path("pyproject.toml").exists() and Path.cwd() != Path.cwd().parent:
     os.chdir("..")
-assert Path("pyproject.toml").exists(), "Open this notebook from inside the Day1_FDE_session folder."
+assert Path("pyproject.toml").exists(), "Open this notebook from inside the Day1_Day2_FDE_session folder."
 print("working folder:", Path.cwd())
+
 # %% [markdown]
-# ### Keys
-# Put your Gemini key in Colab's Secrets panel (the key icon on the left) as `GEMINI_API_KEY`, and a
-# Groq key as `GROQ_API_KEY` if you have one. The cell below copies them into the environment.
-# **No key? Set `LLM_OFFLINE=1`.** Everything still runs, from a cached answer or a rule-based stub,
-# so a room that runs out of quota can still finish the day.
+# ### Offline mode
+# Today we run with no AI keys, on purpose. With `LLM_OFFLINE=1` every AI call returns a saved answer
+# or a simple rule-based answer instead, so everything still runs and every pod gets the same numbers.
+# (Later, to use a real model, put a free Gemini or Groq key in a `.env` file and change the `"1"` to `"0"`.)
 
 # %%
 import os
-try:
-    from google.colab import userdata
-    for k in ("GEMINI_API_KEY", "GROQ_API_KEY", "LANGFUSE_PUBLIC_KEY", "LANGFUSE_SECRET_KEY", "LANGFUSE_HOST"):
-        try:
-            os.environ[k] = userdata.get(k)
-        except Exception:
-            pass
-except ImportError:
-    pass  # not on Colab: keys come from .env
-os.environ.setdefault("LLM_OFFLINE", "0" if os.environ.get("GEMINI_API_KEY") or os.environ.get("GROQ_API_KEY") else "1")
+os.environ["LLM_OFFLINE"] = "1"   # today we run offline: same numbers for everyone, no API key needed
 print("offline mode:", os.environ["LLM_OFFLINE"] == "1")
 
 # %% [markdown]
@@ -70,7 +65,7 @@ print("offline mode:", os.environ["LLM_OFFLINE"] == "1")
 
 # %% [markdown]
 # ## 2. Labeling party (30 minutes)
-# Every pod member labels the **same five receipts** independently, then you compare.
+# Everyone works **alone**. You label the **same five receipts**, then compare your answers with the official ones.
 # These are real scanned receipts from the SROIE dataset (Hugging Face), standing in for the supplier
 # invoices Rohan attached. The fields are: company, date, address, total.
 #
@@ -78,9 +73,14 @@ print("offline mode:", os.environ["LLM_OFFLINE"] == "1")
 # total as the grand total after tax, company as the first business name on the receipt.
 
 # %%
-import json
+import json, os
 from pathlib import Path
 from IPython.display import Image, display
+
+while not Path("pyproject.toml").exists() and Path.cwd() != Path.cwd().parent:
+    os.chdir("..")   # make sure we are in the repo folder
+if not Path("data/real/receipts/labels.json").exists():
+    !python -m creditlens.data_real --only receipts
 
 labels = json.load(open("data/real/receipts/labels.json"))
 party = sorted(labels)[:5]
@@ -89,16 +89,44 @@ for name in party:
     display(Image(filename=f"data/real/receipts/{name}", width=320))
 
 # %% [markdown]
-# Enter your labels in the shared sheet (one column per pod member). Export two members' columns as
-# CSV files and measure agreement. Cohen's kappa is agreement corrected for chance: 1.0 is perfect,
-# 0 is coin-flipping. Disagreements are the interesting part: argue them, update the guidelines,
-# and that argument is what makes the golden set trustworthy.
+# Next you will type your labels into a cell and measure how well they match the official answers.
+# The tool uses Cohen's kappa: agreement corrected for chance. 1.0 is perfect, 0 is coin-flipping.
+# Where you disagree is the interesting part: was the guideline unclear, or did you misread the receipt?
 
 # %%
 !python ground_truth/agreement.py --help
 
 # %% [markdown]
-# Now compare your pod's settled labels with the SROIE human labels. You will not match 100 percent,
+# **Demo run first.** Two example label sheets for the same five receipts live in
+# `ground_truth/party_demo/`. Run the tool on them to see what a good box and a weak box look
+# like. Then you do the same with your own labels.
+#
+# **Predict before you run:** which two boxes will score lowest?
+#
+# The `!` at the start only works inside a notebook cell. In a terminal (PowerShell or bash),
+# type the same command without the `!`.
+
+# %%
+!python ground_truth/agreement.py ground_truth/party_demo/member_a.csv ground_truth/party_demo/member_b.csv --key file
+
+# %% [markdown]
+# **Your turn.** Type what you read on each receipt between the quotes, then run the cell.
+# It saves your answers and scores them against the official answers in `ground_truth/party_demo/official.csv`.
+
+# %%
+import pandas as pd
+my_labels = pd.DataFrame([
+    {"file": "X00016469670.jpg", "company": "", "date": "", "address": "", "total": ""},
+    {"file": "X00016469671.jpg", "company": "", "date": "", "address": "", "total": ""},
+    {"file": "X51005200931.jpg", "company": "", "date": "", "address": "", "total": ""},
+    {"file": "X51005230605.jpg", "company": "", "date": "", "address": "", "total": ""},
+    {"file": "X51005230616.jpg", "company": "", "date": "", "address": "", "total": ""},
+])
+my_labels.to_csv("my_labels.csv", index=False)
+!python ground_truth/agreement.py my_labels.csv ground_truth/party_demo/official.csv --key file
+
+# %% [markdown]
+# Now look at the official labels next to your own. You will not match 100 percent,
 # and that is the lesson: even professional annotators disagree on addresses and company suffixes.
 
 # %%
@@ -292,6 +320,58 @@ for kind in ("financial_statement", "receipt"):
         print("  ", mistake)
 
 # %% [markdown]
+# ## 6. Rohan and Rahul, part one and a half: what they declared versus what reached the bank
+# Extraction gives us the numbers *printed* on a document, and the evaluation above checks that we read
+# them correctly. It cannot tell us whether the business behind them is real. For that we hold one
+# document against another: the turnover each borrower declared on the application, and the money that
+# actually reached the bank account in the last twelve months.
+#
+# **Predict first.** Rohan looked safe on Monday and Rahul looked weak. Whose bank account will show
+# *more* money than the declared turnover?
+
+# %%
+import pandas as pd
+from creditlens.scenarios.detect import load_statement, revenue_gap, round_trips
+
+scn_apps = pd.read_csv("data/scenarios/applications/applications.csv").set_index("application_id")
+story = {}
+for app, who in (("A901", "Rohan"), ("A902", "Rahul")):
+    clean = load_statement(f"data/scenarios/statements/{app}_statement.csv")
+    gap = revenue_gap(clean, scn_apps.loc[app, "declared_revenue_inr_000"])
+    story[app] = clean
+    print(f"{who} ({app}): declared {gap['declared_revenue'] / 1e7:.2f} crore, reached the account "
+          f"{gap['visible_inflow'] / 1e7:.2f} crore -> {gap['visible_over_declared']:.0%} of declared")
+
+# %% [markdown]
+# Rohan's account shows *more* than his declared turnover. That sounds like good news, until you
+# remember yesterday's round trips: money that went out to Ravi Containers and came back days later is
+# counted as money in. Take it out and see what is left.
+
+# %%
+trips = round_trips(story["A901"])
+inflow = story["A901"].query("amount > 0")["amount"].sum()
+came_back = trips["back_amount"].sum()
+print(f"Rohan: {len(trips)} round trips brought back {came_back / 1e7:.2f} crore")
+print(f"money in without the round trips: {(inflow - came_back) / 1e7:.2f} crore, "
+      f"{(inflow - came_back) / (scn_apps.loc['A901', 'declared_revenue_inr_000'] * 1000):.0%} of declared")
+
+# %% [markdown]
+# So the two files trade places. Rohan's account is inflated by money that only passed through it.
+# Rahul's account shows about 60 percent of what he declared. Where is the rest? Remember yesterday's
+# clue: 36 cash deposits, each followed the next day by the same amount to KAMLA DEVI. Money that
+# belongs to his business is ending up somewhere else.
+#
+# **The lesson for the evaluation thread.** An extractor can score 100 percent and still hand Priya a
+# misleading number, because "the document says 4.67 crore" and "the business earns 4.67 crore" are
+# different claims. Our golden set measures the first. Cross-checking documents against each other is
+# how you approach the second, and it is a lead for a person, not a verdict.
+#
+# Two questions remain open, and both need tomorrow's tools: **who is Ravi Containers** to Rohan, and
+# **who is Kamla Devi** to Rahul? Neither name is in the bank statement's metadata. They are in the
+# company registry, and the registry is a graph.
+
+# %% [markdown]
 # ## Exit ticket
 # One thing you learned, one open question. Tomorrow: retrieval, where Priya's policy
-# manual and a real four-hundred-page regulator rulebook become searchable.
+# manual and a real four-hundred-page regulator rulebook become searchable, and the related-party graph
+# tells us who Ravi Containers and Kamla Devi really are.

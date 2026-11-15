@@ -1,10 +1,12 @@
 # %% [markdown]
-# # Day 3: Retrieval, graph and visual documents
+# # Session 2: Retrieval, graph and visual documents
 #
 # **Where we are in the story.** Priya has Rohan's numbers now. Her next three questions are:
 # "What does the policy say about his debt level?", "Does Rohan own other companies that already owe
 # Good Bank money?", and "What does that chart on page 2 of his management pack actually show?"
-# Those are three different kinds of retrieval, and today we build all three.
+# Those are three different kinds of retrieval, and today we build all three. And two names from the
+# bank statements are still unexplained: Ravi Containers in Rohan's file and Kamla Devi in Rahul's. By
+# the end of section 4 the graph tells us who they are, and the policy index tells us which rule it touches.
 #
 # **The one idea of today: the right retriever for the question.** Semantic search finds meaning,
 # keyword search finds exact terms like "3.1" or "DSCR", a graph finds relationships, and visual
@@ -16,13 +18,17 @@
 # pre-computed embeddings your trainer shared.
 
 # %%
-!git clone https://github.com/chahatfde-arch/Day1_FDE_session.git
-%cd Day1_FDE_session
-!pip install -q -e ".[dev,llm,retrieval,realdata]"
-!python -m creditlens.generators --skip-pdfs
-!python -m creditlens.pipeline --load
-!python -m creditlens.data_real --only sop charts
-
+import sys
+if "google.colab" in sys.modules:   # Colab only. On a laptop this cell does nothing.
+    !git clone https://github.com/chahatfde-arch/Day1_Day2_FDE_session.git
+    %cd Day1_Day2_FDE_session
+    !pip install -q -e ".[dev,llm,retrieval,realdata]"
+    !python -m creditlens.generators --skip-pdfs
+    !python -m creditlens.pipeline --load
+    !python -m creditlens.data_real --only sop charts
+    !python -m creditlens.scenarios
+else:
+    print("Not on Colab: skipping the clone. You are already in the repo folder.")
 
 # %% [markdown]
 # **Laptop users:** skip the clone cell above. The next cell finds the repository root, so the notebook
@@ -33,21 +39,13 @@ import os
 from pathlib import Path
 while not Path("pyproject.toml").exists() and Path.cwd() != Path.cwd().parent:
     os.chdir("..")
-assert Path("pyproject.toml").exists(), "Open this notebook from inside the Day1_FDE_session folder."
+assert Path("pyproject.toml").exists(), "Open this notebook from inside the Day1_Day2_FDE_session folder."
 print("working folder:", Path.cwd())
+
 # %%
 import os
-try:
-    from google.colab import userdata
-    for k in ("GEMINI_API_KEY", "GROQ_API_KEY", "NEO4J_URI", "NEO4J_USERNAME", "NEO4J_PASSWORD",
-              "LANGFUSE_PUBLIC_KEY", "LANGFUSE_SECRET_KEY", "LANGFUSE_HOST", "PINECONE_API_KEY"):
-        try:
-            os.environ[k] = userdata.get(k)
-        except Exception:
-            pass
-except ImportError:
-    pass
-os.environ.setdefault("LLM_OFFLINE", "0" if os.environ.get("GEMINI_API_KEY") or os.environ.get("GROQ_API_KEY") else "1")
+os.environ["LLM_OFFLINE"] = "1"   # today we run offline: same numbers for everyone, no API key needed
+print("offline mode:", os.environ["LLM_OFFLINE"] == "1")
 
 # %% [markdown]
 # ## 1. Recap quiz (scored)
@@ -159,7 +157,7 @@ for h in search_policy(q, k=2, source="sba_sop"):
 # director with B, B shares an address with C, so A and C are related even though nothing links them
 # directly. In SQL that is a recursive join per hop. In a graph it is one variable-length path.
 #
-# The registry hides four such groups. Some links are directors, some are addresses: pods that only
+# The registry hides four such groups. Some links are directors, some are addresses: people who only
 # look at directors miss a group. Find them all with the graph, then check the answer key.
 #
 # `GraphStore` runs on Neo4j AuraDB Free when `NEO4J_URI` is set, and on NetworkX in memory otherwise.
@@ -194,9 +192,66 @@ print("\nCypher used:\n", exp.cypher)
 print(store.profile())
 from creditlens.retrieval.graph import cypher_cheatsheet
 for name, q in cypher_cheatsheet().items():
-    print(f"-- {name}
-{q}
-")
+    print(f"-- {name}\n{q}\n")
+
+# %% [markdown]
+# ### Rohan and Rahul, part two: who are Ravi Containers and Kamla Devi?
+# Same `GraphStore`, same function, pointed at the story registry in `data/scenarios/` instead of the
+# Good Bank one. **Predict first:** how many companies are in Rohan's group, and is rule 5.2 breached?
+#
+# Remember what Session 1 found. Rohan: 24 round trips to RAVI CONTAINERS, about 2.07 crore out and
+# back. Rahul: 36 cash deposits, each followed the next day by the same amount to KAMLA DEVI, and a
+# bank account that shows about 60 percent of his declared turnover.
+
+# %%
+story_graph = GraphStore(backend="networkx").load_from_registry(Path("data/scenarios"))
+names = story_graph.companies
+for who, cid in (("Rohan", "SC01"), ("Rahul", "SC10")):
+    e = story_graph.group_exposure(cid)
+    print(f"{who}: {len(e.members)} companies in the group")
+    for m in e.members:
+        print(f"   {m.company_id} {names[m.company_id]['legal_name']:26} link: {m.link:16} hops: {m.hops}")
+    print(f"   group exposure {e.total_exposure_inr_000:,} vs limit {e.limit_inr_000:,} -> breach: {e.breaches_limit}\n")
+
+# %% [markdown]
+# The graph needs one more fact before Priya can write anything: which rule does this break, in the
+# bank's own words? That is a retrieval question, so we ask the policy index, filtered to Good Bank.
+
+# %%
+for q in ("What is the exposure limit for a group of related companies?",
+          "Must the memo list every group member even when the limit is not breached?"):
+    top = search_policy(q, k=1, source="good_bank_policy")[0]
+    print(q, "\n  ->", top.section, "\n ", top.text[:420].replace("\n", " "), "\n")
+
+# %% [markdown]
+# Now put the two sessions together. `case_file` runs the Session 1 cleaning, the Session 2 graph and the
+# policy thresholds, and returns flags with their evidence. Read the last line it prints.
+
+# %%
+from creditlens.scenarios import case_file
+for app in ("A901", "A902"):
+    cf = case_file(Path("data/scenarios"), app)
+    print(app, "->", [f["code"] for f in cf["flags"]])
+    for f in cf["flags"]:
+        print("   ", f["code"], ":", f["title"])
+    print("   ", cf["note"], "\n")
+
+# %% [markdown]
+# **How it turns out.** Rohan's company alone (50,000 thousand) passes rule 5.2. His group of four,
+# linked by a shared director (Rohan Mehta) and a shared address in Nashik, owes or is asking for
+# 1,55,000 thousand against a 1,20,000 limit. Only the graph shows that. Ravi Containers is not a
+# customer: it is Rohan's own company, and 68 percent of his money in comes from his group.
+#
+# Rahul shares a shop address with Kamla Fabrics, whose director is Kamla Devi. Priya phones him: she is
+# his mother, and part of the takings go to the family account. His group owes 55,000 thousand, well
+# inside the limit, and his cash share (about 20 percent) is under the 30 percent in rule 4.2. Nothing
+# breaks a rule. The system *explained* why he looked weak; it did not accuse him.
+#
+# **What happens next is decided by people, not by this notebook.** Policy section 1 forbids automatic
+# approvals. Rohan's file goes to the underwriter and compliance with the evidence, and he is asked to
+# explain. Rule 7.2 means the breach is raised as an exception ticket, and rule 5.3 means the memo lists
+# every group member either way. Priya asks Rahul for the family firm's statements and counts only income
+# she can verify. In Session 3 the agents draft that memo and then stop for the underwriter.
 
 # %% [markdown]
 # ## 5. Visual documents with ColPali (M3 to M7, M9, M12)

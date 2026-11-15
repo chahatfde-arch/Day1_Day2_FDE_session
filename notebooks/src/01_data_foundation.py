@@ -22,10 +22,13 @@
 # `python workshop/get_ready.py 1` in the repo folder.
 
 # %%
-!git clone https://github.com/chahatfde-arch/Day1_FDE_session.git
-%cd Day1_FDE_session
-!pip install -q -r requirements.txt
-
+import sys
+if "google.colab" in sys.modules:   # Colab only. On a laptop this cell does nothing.
+    !git clone https://github.com/chahatfde-arch/Day1_Day2_FDE_session.git
+    %cd Day1_Day2_FDE_session
+    !pip install -q -r requirements.txt
+else:
+    print("Not on Colab: skipping the clone. The next cell finds your repo folder.")
 
 # %% [markdown]
 # **Laptop users:** skip the clone cell above. The next cell finds the repository root, so the notebook
@@ -36,8 +39,9 @@ import os
 from pathlib import Path
 while not Path("pyproject.toml").exists() and Path.cwd() != Path.cwd().parent:
     os.chdir("..")
-assert Path("pyproject.toml").exists(), "Open this notebook from inside the Day1_FDE_session folder."
+assert Path("pyproject.toml").exists(), "Open this notebook from inside the Day1_Day2_FDE_session folder."
 print("working folder:", Path.cwd())
+
 # %% [markdown]
 # ## 1. Discovery role-play (no code, about 30 minutes)
 # Your trainer plays the Head of Credit, the Chief Risk Officer and the CISO. Each holds constraints
@@ -166,6 +170,14 @@ except pa.errors.SchemaErrors as e:
 #
 # Run the same cleaning step on them. **Predict first:** how many different spellings of one company
 # name will the raw file hold, and what will the cleaned file show?
+
+# %% [markdown]
+# 1.Counterparty
+# 2. Share of inflow
+# 3. Round trip
+# 4. Pass through
+# 5. Tolerance
+# 6. Window
 
 # %%
 !python -m creditlens.scenarios
